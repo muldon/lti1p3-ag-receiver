@@ -8,8 +8,9 @@
 | Technologies  | Version                                |
 | -------------- | ---------------------------------------------------------------------- |
 | [Java OpenJDK](https://jdk.java.net/17/) | 17                                                         |
-| [Gradle](https://gradle.org)  | 7.5.1 |
 | [Spring Boot](https://spring.io/projects/spring-boot)  | 2.6.2 |
+| [Spring Oauth2](https://www.baeldung.com/spring-security-oauth-resource-server)  | 5.6.1|
+| [Gradle](https://gradle.org)  | 7.5.1 |
 | [Swagger](https://swagger.io)   | 3.0.3 |
 
 
