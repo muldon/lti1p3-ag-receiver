@@ -4,7 +4,7 @@ plugins {
 	id 'java'
 }
 
-group = 'com.github.eduoliveiradev'
+group = 'cl.services.lti1p3.ag.receiver'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '17'
 
