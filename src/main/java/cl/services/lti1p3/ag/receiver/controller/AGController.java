@@ -27,8 +27,4 @@ public class AGController {
     public void scores(@PathVariable String param1,@PathVariable String param2, @RequestBody Score scoreDTO) {
     	agService.postScores(scoreDTO);
     }
-    
-  
-    
-    
 }

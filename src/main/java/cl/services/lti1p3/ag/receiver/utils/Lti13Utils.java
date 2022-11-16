@@ -13,7 +13,7 @@
 //
 //*********************************************************************
 
-package cl.services.lti1p3.ag.receiver.service;
+package cl.services.lti1p3.ag.receiver.utils;
 
 import java.net.URL;
 import java.security.Key;

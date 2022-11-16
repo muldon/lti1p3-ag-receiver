@@ -16,8 +16,8 @@ import com.nimbusds.jose.JOSEException;
 
 import cl.services.lti1p3.ag.receiver.dto.AccessToken;
 import cl.services.lti1p3.ag.receiver.dto.AuthRequest;
+import cl.services.lti1p3.ag.receiver.exception.LTI1p3Exception;
 import cl.services.lti1p3.ag.receiver.service.AuthService;
-import cl.services.lti1p3.ag.receiver.service.LTI1p3Exception;
 
 @RestController
 public class AuthController {

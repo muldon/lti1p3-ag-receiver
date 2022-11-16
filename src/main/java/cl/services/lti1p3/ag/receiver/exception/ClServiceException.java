@@ -2,7 +2,7 @@
   This program is the subject of trade secrets and intellectual property 
   rights owned by Carnegie Learning. This legend must continue to appear 
   in the source code despite modifications or enhancements by any party.*/
-package cl.services.lti1p3.ag.receiver.service;
+package cl.services.lti1p3.ag.receiver.exception;
 
 import java.util.Arrays;
 import java.util.Collections;

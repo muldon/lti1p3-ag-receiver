@@ -10,6 +10,7 @@ import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -24,9 +25,13 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jwt.JWT;
 
 import cl.services.lti1p3.ag.receiver.dto.AccessToken;
 import cl.services.lti1p3.ag.receiver.dto.AuthRequest;
+import cl.services.lti1p3.ag.receiver.exception.LTI1p3Exception;
+import cl.services.lti1p3.ag.receiver.utils.Lti13Utils;
+import cl.services.lti1p3.ag.receiver.utils.LtiStrings;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 
@@ -60,7 +65,7 @@ public class AuthService {
     	//The tool’s JWKS URL exposes all the public keys, including the one pairing the private key it just used.
     	//Our platform, when receiving the JWT, checks its kid, extracts the public key from the tool’s JWKS URL, and verifies the signature.
     	Jws<Claims> jwtClaims = Lti13Utils.parseJWT(JWKsUrl, authRequest.client_assertion());
-    	 
+    	
     	//validation rules
     	validateRequest(jwtClaims,target);
     	
@@ -71,61 +76,71 @@ public class AuthService {
     
    
     //IMS specification: https://www.imsglobal.org/spec/security/v1p1#using-json-web-tokens-with-oauth-2-0-client-credentials-grant
-    private void validateRequest(Jws<Claims> jwtClaims, String target) throws LTI1p3Exception {
+    //The IMS is not clear on which side (consumer or platform) must follow these validation rules. Thus, we are guaranteeing they are followed on our side.
+	private void validateRequest(Jws<Claims> jwtClaims, String target) throws LTI1p3Exception {
     	Claims claims = jwtClaims.getBody();
     	  
+    	//1-The JWT payload MUST contain at least the following Claims: iss, sub, aud, iat, exp and jti
+    	List<String> mustContainClaims = List.of(LtiStrings.LTI_ISS, LtiStrings.LTI_SUB, LtiStrings.LTI_AUD,LtiStrings.LTI_IAT,LtiStrings.LTI_EXP,LtiStrings.LTI_JTI);
+    	checkMandatoryClaims(mustContainClaims,claims);
+    	
     	/* 
-    	 * 1-Aud
+    	 * 2-Aud
     	 * The aud Claim MUST contain a value that identifies the authorization server as an intended audience. 
     	 * The Consumer MAY use the token endpoint URL of the authorization server as a value for an aud element to identify the authorization server as an intended audience of the JWT. 
     	 * The authorization server MUST reject any JWT that does not contain its own identity as the intended audience. 
     	 * This information MUST be sent as an array even when there is only one value.
     	 */    	
-    	List<String> audList = (ArrayList)claims.get("aud");
+    	var<?> audList = (ArrayList<?>)claims.get(LtiStrings.LTI_AUD);  //TODO reuse LtiStrings.java
     	boolean validAud = audList.stream().anyMatch(authorizationtTokenURL::equals);
     	if(!validAud) {
     		//TODO - reuse or maintain a copy ? 
     		throw new LTI1p3Exception("aud ("+audList+") does not contain the token endpoint: "+authorizationtTokenURL).log(2);
     	}
     	
-    	System.out.println();
-		//String aud = jwtClaims.get
+    	 
+    	
+    	//3- let´s guarantee that we are not granting an access token for an expired message  
+    	String expStr = String.format("%.0f", claims.get(LtiStrings.LTI_EXP));
+    	//Instant expInstant = Instant.ofEpochSecond(Long.parseLong(expStr));
+    	
+//    	Date expDate = new Date( Double.parseDouble(expStr));
+//    	Date now = new Date();
+//		if(!now.before(expDate)) {
+//			throw new LTI1p3Exception("The current time: "+now+" MUST be before the time represented by the exp Claim: "+expDate);
+//		}
+    	
+    	log.info("");
 		
 	}
 
+	private void checkMandatoryClaims(List<String> mandatoryClaims, Claims jwtClaims) throws LTI1p3Exception {
+		for(String mandatoryClaim: mandatoryClaims) {
+			if(!jwtClaims.containsKey(mandatoryClaim)) {
+				throw new LTI1p3Exception("Claim "+mandatoryClaim+ " is mandatory").log(2);
+			}
+    	}		
+	}
+	 
+
 	private AccessToken createToken(AuthRequest authRequest) throws GeneralSecurityException, IOException {
         Instant now = Instant.now();
-        //long expiry = 36000L; // 10 horas
-        long expiry = 300L; // 5 min
+        long expiryInSeconds = 1L; 
         String scope = "https://purl.imsglobal.org/spec/lti-ags/scope/score";
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("self")
                 .issuedAt(now)
-                .expiresAt(now.plusSeconds(expiry))
+                .expiresAt(now.plusSeconds(expiryInSeconds))
                 .subject("AAAA")
-                .claim("scope", scope)
+                .claim("scope", scope) //TODO only this scope ? 
                 .build();
         String accessToken = encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
         String tokenType = "bearer";
-        AccessToken at = new AccessToken(accessToken, tokenType,expiry, scope);
-        log.info("createToken: "+accessToken);
+        AccessToken at = new AccessToken(accessToken, tokenType,expiryInSeconds, scope);
+        log.info("access token granted: "+accessToken);
         return at;
     }
     
     
-     
-    
-    private String getOwnKey(String keyName) throws IOException {
-		String key = "";
-		try (InputStream lpis = getClass().getResourceAsStream(keyName)) {
-			if (lpis != null)
-				key = new BufferedReader(new InputStreamReader(lpis, StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
-		} catch (IOException e1) {
-			throw new FileNotFoundException(keyName);
-		}
-		if(StringUtils.isBlank(key)) {
-			throw new IOException("Key "+keyName+" could not be read from class path");
-		}
-		return key;
-	}
+      
 }
