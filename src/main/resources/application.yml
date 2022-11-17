@@ -14,5 +14,4 @@ authorizationserver:
   auth.token.url: http://host.docker.internal:8080/auth/platform/token/tao 
   
 tao:
-  tool.kid: toolKey
   tool.jwks.url: https://lti-public-devkit.dev.gcp-eu.taocloud.org/lti1p3/.well-known/jwks/toolSet.json
